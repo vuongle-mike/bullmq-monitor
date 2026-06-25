@@ -8,13 +8,10 @@ const { createBullBoard } = require('@bull-board/api');
 const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
 const { ExpressAdapter } = require('@bull-board/express');
 
-const { createConfig, createRedisOptions } = require('./src/config');
-const { JOB_STATUSES } = require('./src/constants');
-const { loadEnvFile } = require('./src/env');
+const { createConfig, createRedisOptions, loadEnvFile } = require('./src/config');
 const { renderLivePage } = require('./src/live-page');
+const { createMonitor } = require('./src/monitor');
 const { registerRoutes } = require('./src/routes');
-const { createJobSerializers } = require('./src/serializers');
-const { createSseHub } = require('./src/sse');
 
 loadEnvFile(path.join(__dirname, '.env'));
 
@@ -37,8 +34,10 @@ createBullBoard({
   serverAdapter,
 });
 
-const sseHub = createSseHub({
+const monitor = createMonitor({
   config,
+  connection,
+  queue,
   queueEvents,
   isShuttingDown: () => isShuttingDown,
 });
@@ -46,12 +45,8 @@ const sseHub = createSseHub({
 registerRoutes({
   app,
   config,
-  connection,
-  jobStatuses: JOB_STATUSES,
-  queue,
+  monitor,
   renderLivePage,
-  serializers: createJobSerializers(queue),
-  sseHub,
 });
 
 app.use(config.basePath, serverAdapter.getRouter());
@@ -82,7 +77,7 @@ async function shutdown(signal) {
   isShuttingDown = true;
   console.log(`Received ${signal}. Closing BullMQ monitor...`);
 
-  sseHub.closeClients();
+  monitor.events.closeClients();
 
   const forceCloseTimer = setTimeout(() => {
     for (const socket of sockets) {
