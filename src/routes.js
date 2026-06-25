@@ -79,18 +79,22 @@ function registerRoutes({
     const range = parseRange(req.query);
 
     try {
-      const [jobs, counts] = await Promise.all([
-        queue.getJobs([status], range.start, range.end, range.asc),
+      const [jobIds, counts] = await Promise.all([
+        queue.getRanges([status], range.start, range.end, range.asc),
         queue.getJobCounts(status),
       ]);
+      const client = await queue.client;
+      const jobFieldResponses = await getJobSummaryFields(client, queue, jobIds);
 
       res.json({
         status,
-        jobs: await Promise.all(jobs.map(job => serializers.serializeJobSummary(job, status))),
+        jobs: jobIds.map((jobId, index) =>
+          serializers.serializeJobSummaryFromHash(jobId, jobFieldResponses[index], status)
+        ),
         pagination: {
           start: range.start,
           end: range.end,
-          count: jobs.length,
+          count: jobIds.length,
           total: counts[status] || 0,
           asc: range.asc,
         },
@@ -128,6 +132,38 @@ function registerRoutes({
 
   app.get(config.livePath, (req, res) => {
     res.type('html').send(renderLivePage(config, jobStatuses));
+  });
+}
+
+async function getJobSummaryFields(client, queue, jobIds) {
+  if (jobIds.length === 0) {
+    return [];
+  }
+
+  const pipeline = client.pipeline();
+
+  for (const jobId of jobIds) {
+    pipeline.hmget(
+      queue.toKey(jobId),
+      'name',
+      'progress',
+      'atm',
+      'ats',
+      'failedReason',
+      'delay',
+      'priority',
+      'timestamp',
+      'processedOn',
+      'finishedOn'
+    );
+  }
+
+  return (await pipeline.exec()).map(([error, fields]) => {
+    if (error) {
+      throw error;
+    }
+
+    return fields;
   });
 }
 

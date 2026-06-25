@@ -54,10 +54,58 @@ function createJobSerializers(queue) {
     };
   }
 
+  function serializeJobSummaryFromHash(jobId, fields, status) {
+    const [
+      name,
+      progress,
+      attemptsMade,
+      attemptsStarted,
+      failedReason,
+      delay,
+      priority,
+      timestamp,
+      processedOn,
+      finishedOn,
+    ] = fields;
+
+    return {
+      id: jobId,
+      name: name || '',
+      status,
+      progress: parseJsonField(progress, 0),
+      attemptsMade: parseIntegerField(attemptsMade),
+      attemptsStarted: parseIntegerField(attemptsStarted),
+      failedReason: failedReason || null,
+      delay: parseIntegerField(delay),
+      priority: parseIntegerField(priority),
+      timestamp: parseIntegerField(timestamp) || null,
+      processedOn: parseIntegerField(processedOn) || null,
+      finishedOn: parseIntegerField(finishedOn) || null,
+    };
+  }
+
   return {
     serializeJob,
+    serializeJobSummaryFromHash,
     serializeJobSummary,
   };
+}
+
+function parseIntegerField(value) {
+  const parsed = Number.parseInt(value || '0', 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseJsonField(value, fallback) {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
+  }
 }
 
 module.exports = {

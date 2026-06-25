@@ -437,6 +437,8 @@ function renderLivePage(config, jobStatuses) {
       status: 'waiting',
       selectedJobId: null,
       refreshTimer: null,
+      isRefreshing: false,
+      pendingRefresh: false,
       source: null,
     };
 
@@ -454,7 +456,7 @@ function renderLivePage(config, jobStatuses) {
 
     queueNameEl.textContent = QUEUE_NAME;
     document.getElementById('bullBoardLink').href = BULL_BOARD_PATH;
-    document.getElementById('refreshButton').addEventListener('click', () => refreshAll());
+    document.getElementById('refreshButton').addEventListener('click', () => queueRefresh());
 
     function setConnection(status) {
       connectionDotEl.className = 'dot ' + status;
@@ -487,7 +489,7 @@ function renderLivePage(config, jobStatuses) {
           state.selectedJobId = null;
           detailEl.className = 'detail-empty';
           detailEl.textContent = 'Select a job to inspect its payload and state.';
-          refreshAll();
+          queueRefresh();
         });
         tabsEl.appendChild(button);
       }
@@ -529,7 +531,7 @@ function renderLivePage(config, jobStatuses) {
         ].join('');
         row.children[0].textContent = job.id;
         row.children[1].textContent = job.name;
-        row.children[2].textContent = job.attemptsMade + ' / ' + (job.opts?.attempts || 1);
+        row.children[2].textContent = job.attemptsMade + ' / ' + job.attemptsStarted;
         row.children[3].textContent = typeof job.progress === 'object' ? JSON.stringify(job.progress) : job.progress;
         row.children[4].textContent = formatDate(job.timestamp);
         row.children[5].textContent = formatDate(job.finishedOn);
@@ -595,6 +597,13 @@ function renderLivePage(config, jobStatuses) {
     }
 
     async function refreshAll() {
+      if (state.isRefreshing) {
+        state.pendingRefresh = true;
+        return;
+      }
+
+      state.isRefreshing = true;
+
       try {
         showError('');
         await Promise.all([refreshSummary(), refreshJobs()]);
@@ -603,6 +612,13 @@ function renderLivePage(config, jobStatuses) {
         }
       } catch (error) {
         showError(error.message);
+      } finally {
+        state.isRefreshing = false;
+
+        if (state.pendingRefresh) {
+          state.pendingRefresh = false;
+          scheduleRefresh(500);
+        }
       }
     }
 
@@ -618,9 +634,18 @@ function renderLivePage(config, jobStatuses) {
       }
     }
 
-    function scheduleRefresh() {
+    function scheduleRefresh(delay = 250) {
       clearTimeout(state.refreshTimer);
-      state.refreshTimer = setTimeout(() => refreshAll(), 250);
+      state.refreshTimer = setTimeout(() => queueRefresh(), delay);
+    }
+
+    function queueRefresh() {
+      if (state.isRefreshing) {
+        state.pendingRefresh = true;
+        return;
+      }
+
+      refreshAll();
     }
 
     function connectEvents() {
@@ -630,7 +655,7 @@ function renderLivePage(config, jobStatuses) {
       state.source.addEventListener('connected', event => {
         setConnection('connected');
         lastEventEl.textContent = JSON.parse(event.data).event;
-        refreshAll();
+        queueRefresh();
       });
 
       state.source.addEventListener('queue-event', event => {
@@ -656,7 +681,7 @@ function renderLivePage(config, jobStatuses) {
     }
 
     renderTabs();
-    refreshAll();
+    queueRefresh();
     connectEvents();
   </script>
 </body>
