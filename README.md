@@ -1,6 +1,12 @@
 # BullMQ Monitor
 
-A small Express app for monitoring one BullMQ queue.
+BullMQ Monitor is a small Express app for watching one BullMQ queue in realtime.
+
+![BullMQ Monitor dashboard](assets/dashboard.png)
+
+## About
+
+This project is a lightweight monitor for local or internal BullMQ operations. It adds a read-only realtime dashboard for fast visibility into queue health, job counts, active work, failures, and job details while keeping Bull Board available for operational actions.
 
 It includes:
 
