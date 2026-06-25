@@ -4,7 +4,7 @@ const path = require('path');
 const express = require('express');
 
 function registerRoutes({ app, config, monitor, publicDir }) {
-  app.use(`${config.livePath}/assets`, express.static(publicDir));
+  app.use(config.livePath, express.static(publicDir));
 
   app.get('/', (req, res) => {
     res.redirect(config.livePath);
