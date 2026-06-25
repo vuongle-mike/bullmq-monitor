@@ -1,6 +1,11 @@
 'use strict';
 
-function registerRoutes({ app, config, monitor, renderLivePage }) {
+const path = require('path');
+const express = require('express');
+
+function registerRoutes({ app, config, monitor, publicDir }) {
+  app.use(`${config.livePath}/assets`, express.static(publicDir));
+
   app.get('/', (req, res) => {
     res.redirect(config.livePath);
   });
@@ -54,7 +59,7 @@ function registerRoutes({ app, config, monitor, renderLivePage }) {
   app.get(`${config.livePath}/events`, monitor.events.handleRequest);
 
   app.get(config.livePath, (req, res) => {
-    res.type('html').send(renderLivePage(config, monitor.jobStatuses));
+    res.sendFile(path.join(publicDir, 'index.html'));
   });
 }
 

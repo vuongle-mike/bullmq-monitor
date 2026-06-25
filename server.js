@@ -9,7 +9,6 @@ const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
 const { ExpressAdapter } = require('@bull-board/express');
 
 const { createConfig, createRedisOptions, loadEnvFile } = require('./src/config');
-const { renderLivePage } = require('./src/live-page');
 const { createMonitor } = require('./src/monitor');
 const { registerRoutes } = require('./src/routes');
 
@@ -19,6 +18,7 @@ const config = createConfig();
 const redisOptions = createRedisOptions(config);
 
 const app = express();
+const publicDir = path.join(__dirname, 'public');
 const connection = new IORedis(redisOptions);
 const queue = new Queue(config.queueName, { connection });
 const queueEvents = new QueueEvents(config.queueName, { connection: redisOptions });
@@ -46,7 +46,7 @@ registerRoutes({
   app,
   config,
   monitor,
-  renderLivePage,
+  publicDir,
 });
 
 app.use(config.basePath, serverAdapter.getRouter());

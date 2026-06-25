@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BullMQ Live Monitor</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="header-inner">
+        <div>
+          <h1>BullMQ Live Monitor</h1>
+          <div class="subtitle">Queue <span id="queueName" class="mono"></span> on <span id="redisName" class="mono"></span></div>
+        </div>
+        <div class="header-actions">
+          <span class="status-pill"><span id="connectionDot" class="dot disconnected"></span><span id="connectionText">disconnected</span></span>
+          <button id="refreshButton" class="button" type="button">Refresh</button>
+          <a id="bullBoardLink" class="button" href="#">Bull Board</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="summary" class="summary"></section>
+
+      <section class="layout">
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Jobs</h2>
+            <div class="events">
+              <span>Last event</span>
+              <span id="lastEvent" class="event-name">none</span>
+              <span id="lastUpdated">never</span>
+            </div>
+          </div>
+          <div id="tabs" class="tabs"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Attempts</th>
+                  <th>Progress</th>
+                  <th>Created</th>
+                  <th>Finished</th>
+                </tr>
+              </thead>
+              <tbody id="jobsBody"></tbody>
+            </table>
+          </div>
+          <div id="jobsError" class="error-text"></div>
+        </div>
+
+        <aside class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Job Detail</h2>
+          </div>
+          <div id="detail" class="detail-empty">Select a job to inspect its payload and state.</div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+</body>
+</html>
